@@ -30,7 +30,7 @@ export default function App() {
             } else if (route.name === 'Wind') {
               iconName = focused ? 'leaf' : 'leaf-outline';
             } else if (route.name === 'Tickets') {
-              iconName = focused ? 'ticket' : 'ticket-outline';
+              iconName = focused ? 'receipt' : 'receipt-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;

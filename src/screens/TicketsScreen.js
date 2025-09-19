@@ -121,7 +121,7 @@ const TicketsScreen = () => {
       <View key={ticket.id} style={styles.ticketCard}>
         <View style={styles.ticketHeader}>
           <View style={styles.ticketIdContainer}>
-            <Ionicons name="ticket-outline" size={20} color="#1a365d" />
+            <Ionicons name="receipt-outline" size={20} color="#1a365d" />
             <Text style={styles.ticketId}>{ticket.id}</Text>
           </View>
           <View style={styles.statusPriorityContainer}>

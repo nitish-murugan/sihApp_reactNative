@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import WebSocketService from '../services/WebSocketService';
+import NotificationService from '../services/NotificationService';
 
 const LiveScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
@@ -23,6 +24,9 @@ const LiveScreen = () => {
 
   // Initialize WebSocket connection and subscribe to data
   useEffect(() => {
+    // Initialize notification service
+    NotificationService.initialize();
+
     // Connect to WebSocket server
     WebSocketService.connect();
     setConnectionStatus('Connecting...');
@@ -33,9 +37,24 @@ const LiveScreen = () => {
       
       // Extract the actual sensor data and meter ID from the message
       if (message.data && message.meterId) {
+        const meterData = message.data;
+        const meterId = message.meterId;
+        const meterName = `Meter ${meterId}`;
+
+        // Check for voltage alerts (voltage = 0)
+        if (meterData.voltage === 0) {
+          NotificationService.showVoltageAlert(meterId, meterName);
+        }
+
+        // Check for power factor alerts (pf < 0.85)
+        if (meterData.pf !== undefined && meterData.pf < 0.85 && meterData.pf > 0) {
+          NotificationService.showPowerFactorAlert(meterId, meterName, meterData.pf);
+        }
+
+        // Update state with new data
         setMeterRealTimeData(prevData => ({
           ...prevData,
-          [message.meterId]: message.data
+          [meterId]: meterData
         }));
       }
     };
@@ -179,23 +198,50 @@ const LiveScreen = () => {
   };
 
   const renderMeterCard = (meter) => {
+    // Check for alerts
+    const hasVoltageAlert = meter.voltage === 0;
+    const hasPowerFactorAlert = meter.powerFactor < 0.85 && meter.powerFactor > 0;
+    const hasAnyAlert = hasVoltageAlert || hasPowerFactorAlert;
+
     const parameters = [
-      { key: 'voltage', label: 'Voltage', value: `${meter.voltage} V`, unit: 'V' },
+      { 
+        key: 'voltage', 
+        label: 'Voltage', 
+        value: `${meter.voltage} V`, 
+        unit: 'V',
+        hasAlert: hasVoltageAlert,
+        alertIcon: 'warning'
+      },
       { key: 'current', label: 'Current', value: `${meter.current} A`, unit: 'A' },
       { key: 'power', label: 'Power', value: `${meter.power} W`, unit: 'W' },
       { key: 'instEnergy', label: 'Instantaneous Energy', value: `${meter.instEnergy} kWh`, unit: 'kWh' },
       { key: 'energy', label: 'Energy', value: `${meter.energy} kWh`, unit: 'kWh' },
-      { key: 'powerFactor', label: 'Power Factor', value: meter.powerFactor.toString(), unit: '' },
+      { 
+        key: 'powerFactor', 
+        label: 'Power Factor', 
+        value: meter.powerFactor.toString(), 
+        unit: '',
+        hasAlert: hasPowerFactorAlert,
+        alertIcon: 'trending-down'
+      },
       { key: 'frequency', label: 'Frequency', value: `${meter.frequency} Hz`, unit: 'Hz' },
       { key: 'harmonics', label: 'Harmonics', value: `${meter.harmonics} %`, unit: '%' },
     ];
 
     return (
-      <View key={meter.id} style={styles.meterCard}>
+      <View key={meter.id} style={[
+        styles.meterCard,
+        hasAnyAlert && styles.meterCardAlert
+      ]}>
         <View style={styles.meterHeader}>
           <View style={styles.meterTitleContainer}>
             <Ionicons name="speedometer-outline" size={24} color="#1a365d" />
             <Text style={styles.meterTitle}>{meter.name}</Text>
+            {hasAnyAlert && (
+              <View style={styles.alertBadge}>
+                <Ionicons name="warning" size={16} color="#fff" />
+              </View>
+            )}
           </View>
           <View style={[
             styles.statusBadge,
@@ -207,16 +253,28 @@ const LiveScreen = () => {
 
         <View style={styles.parametersGrid}>
           {parameters.map((param, index) => (
-            <View key={index} style={styles.parameterCard}>
+            <View key={index} style={[
+              styles.parameterCard,
+              param.hasAlert && styles.parameterCardAlert
+            ]}>
               <View style={styles.parameterHeader}>
                 <Ionicons
                   name={getParameterIcon(param.key)}
                   size={20}
-                  color={getParameterColor(param.key)}
+                  color={param.hasAlert ? '#ef4444' : getParameterColor(param.key)}
                 />
-                <Text style={styles.parameterLabel}>{param.label}</Text>
+                <Text style={[
+                  styles.parameterLabel,
+                  param.hasAlert && styles.parameterLabelAlert
+                ]}>{param.label}</Text>
+                {param.hasAlert && (
+                  <Ionicons name={param.alertIcon} size={16} color="#ef4444" />
+                )}
               </View>
-              <Text style={[styles.parameterValue, { color: getParameterColor(param.key) }]}>
+              <Text style={[
+                styles.parameterValue, 
+                { color: param.hasAlert ? '#ef4444' : getParameterColor(param.key) }
+              ]}>
                 {param.value}
               </Text>
             </View>
@@ -330,6 +388,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  meterCardAlert: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
+    borderWidth: 2,
+  },
   meterHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -342,12 +405,23 @@ const styles = StyleSheet.create({
   meterTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   meterTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1a365d',
     marginLeft: 10,
+    flex: 1,
+  },
+  alertBadge: {
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -373,6 +447,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  parameterCardAlert: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#ef4444',
+  },
   parameterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -383,6 +461,10 @@ const styles = StyleSheet.create({
     color: '#718096',
     fontWeight: '600',
     marginLeft: 8,
+    flex: 1,
+  },
+  parameterLabelAlert: {
+    color: '#ef4444',
   },
   parameterValue: {
     fontSize: 18,
