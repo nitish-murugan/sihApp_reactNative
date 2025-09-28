@@ -4,13 +4,7 @@
     "slug": "energy-monitoring-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1a365d"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,14 +12,14 @@
       "supportsTablet": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1a365d"
+      "package": "com.anonymous.energymonitoringapp"
+    },
+    "web": {},
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "b3e5d5ce-d774-4d20-8cb1-11da62efca7e"
       }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": []
+    }
   }
-} 
+}
