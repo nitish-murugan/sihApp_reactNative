@@ -8,6 +8,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import LiveScreen from './src/screens/LiveScreen';
 import SolarScreen from './src/screens/SolarScreen';
 import WindScreen from './src/screens/WindScreen';
+import StorageScreen from './src/screens/StorageScreen';
 import TicketsScreen from './src/screens/TicketsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -29,6 +30,8 @@ export default function App() {
               iconName = focused ? 'sunny' : 'sunny-outline';
             } else if (route.name === 'Wind') {
               iconName = focused ? 'leaf' : 'leaf-outline';
+            } else if (route.name === 'Storage') {
+              iconName = focused ? 'battery-charging' : 'battery-charging-outline';
             } else if (route.name === 'Tickets') {
               iconName = focused ? 'receipt' : 'receipt-outline';
             }
@@ -58,6 +61,7 @@ export default function App() {
         <Tab.Screen name="Live" component={LiveScreen} />
         <Tab.Screen name="Solar" component={SolarScreen} />
         <Tab.Screen name="Wind" component={WindScreen} />
+        <Tab.Screen name="Storage" component={StorageScreen} />
         <Tab.Screen name="Tickets" component={TicketsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
